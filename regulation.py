@@ -1,3 +1,9 @@
+"""
+This script has been prepared for the compliance checks of the quality standards determined by the Turkish government.
+Author: @FurkanEmiroglu
+"""
+
+
 def wastewater(population):
     """
     Legal directive on population and daily water consumption.

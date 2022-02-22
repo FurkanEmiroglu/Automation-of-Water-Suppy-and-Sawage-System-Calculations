@@ -1,11 +1,9 @@
 """
-This module uses statistical methods to estimate the population that will benefit from the water supply system
+This script uses statistical methods to estimate the population that will benefit from the water supply system
 throughout the life of the project.
 author: @FurkanEmiroglu
 """
 
-
-from cmath import exp
 from math import ceil
 
 

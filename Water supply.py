@@ -1,5 +1,8 @@
-#
-from re import A
+"""
+Automation of hydraulic calculations of the project of providing clean water to the countryside.
+It is assumed that clean water will be drawn from wells and distributed to the region.
+author: @FurkanEmiroglu
+"""
 import numpy as np
 import math
 import population
@@ -47,6 +50,12 @@ def main_flow(future_pop, wastewaterdaily, fire_dept, diameter):
     # . . calculating flow rate that will pass through the main line regularly
     transmitted_flow = city_water_needs + industrial_needs
 
+    # . . printing out results
+    print(
+        f"for values future pop: {future_pop},  wastewaterdaily: {wastewaterdaily}, " +
+        f" fire dept: {fire_dept}  diameter: {diameter} our expected main flow is " +
+        f" {main_flow_rate} cubicmeter/second")
+
     # . . returning results
     return main_flow_rate, transmitted_flow
 
@@ -80,6 +89,10 @@ def well_sec_check(diameter, H, k, iterations):
         else:
             continue
     S_sec = round(S_sec, 2)
+
+    # . . printing S_sec
+    print(f"S_sec is: {S_sec}")
+
     return S_sec
 
 
@@ -110,7 +123,7 @@ def flow_sec_check(diameter, H, k, S_sec):
             f"Q_sec = Q_cr check failed. Q_sec is {Q_sec}, Q_cr is {Q_cr}")
 
 
-def compare_real_descent(diameter, main_flow_rate, Q_sec, S_sec,  H, k, iterations):
+def compare_real_descent(diameter, main_flow_rate, Q_sec, S_sec, H, k, iterations):
     """
     It compares the amount of descent that will occur with the amount of descent that will be created by the critical flow.
 
@@ -141,18 +154,19 @@ def compare_real_descent(diameter, main_flow_rate, Q_sec, S_sec,  H, k, iteratio
             (np.pi * k) / (2 * H - S_real) * \
             np.log(3000 * S_real * (np.sqrt(k)) / diameter)
         if round(S_real, 2) == round(descent_equation, 2):
-            if S_real < S_sec:
-                print(f"Success: Amount of descent is within safe limits.")
-                break
+            S_real = round(S_real, 2)
+            print(
+                f"Success: Amount of descent is within safe limits. S_real: {S_real} ")
+            break
+        elif round(S_real, 2) > round(S_sec, 2):
+            S_real = round(S_real, 2)
+            print(
+                f"Failure: Amount of descent IS NOT TOLERABLE! S_real: {S_real} ")
+            break
         else:
             S_real += 0.01
             continue
-    if S_real > S_sec:
-        print(f"Failure: Amount of descent IS NOT TOLERABLE!")
-    S_real = round(S_real, 2)
-    S_sec = round(S_sec, 2)
     descent_equation = round(descent_equation, 2)
-    print(f"Number of wells needed: {n_well}")
     return S_real
 
 
@@ -193,7 +207,6 @@ def reservoir_design(transmitted_flow, fire_dept):
 
     # . . printing out results
     print(f"Transmitted flow rate is: {transmitted_flow} liter/second")
-    print(f"Active usage volume is {active_usage}")
     print(f"Reservoir volume is {reservoir}")
     print(
         f"Designed reservoir dimensions: \r\n {Lx} meters width \r\n {Ly} meters lenght")
@@ -217,14 +230,16 @@ def economical_pipe_diameter(main_flow_rate):
     # . . for minimal energy loss velocity must be around 1 meter/second
     # . . trying out different pipe diameters for optimum result
     for pipe_diameter in pipe_list:
-        velocity = 4*main_flow_rate/(np.pi*np.square(pipe_diameter))
+        velocity = 4 * (main_flow_rate/(np.pi*np.square(pipe_diameter)))
         if velocity >= 0.9 and velocity <= 1.1:
+            pipe_diameter = round(pipe_diameter, 3)
             print(
                 f"Economical pipe diameter selected for water supply: {pipe_diameter}")
-            break
+            return pipe_diameter
         else:
             continue
-    return pipe_diameter
+        print(
+            "Flow is intolerable, couldn't find a pipe diameter for minmized energy loss.")
 
 
 def run():
@@ -254,23 +269,22 @@ def run():
     # . . calculating main flow rate
     main_flow_rate, transmitted_flow = main_flow(
         future_pop, wastewaterdaily, fire_dept, diameter)
-    print(
-        f"for values future pop: {future_pop},  wastewaterdaily: {wastewaterdaily}, " +
-        f" fire dept: {fire_dept}  diameter: {diameter} our expected main flow is " +
-        f" {main_flow_rate} cubicmeter/second")
 
     # . . control of renewability principles
     S_sec = well_sec_check(diameter, H_coeff, k_coeff, iterations)
-    print(f"S_sec is: {S_sec}")
+
     # . . calculating for critical flow rate
     Q_sec = flow_sec_check(diameter, H_coeff, k_coeff, S_sec)
 
     # . . comparing real descent in the well vs. critical descent for renewability
     S_real = compare_real_descent(
-        diameter, main_flow_rate, Q_sec, S_sec, H_coeff, k_coeff, iterations)
+        diameter, transmitted_flow/1000, Q_sec, S_sec, H_coeff, k_coeff, iterations)
 
     # . . designing the reservoir
     Lx, Ly = reservoir_design(transmitted_flow, fire_dept)
+
+    # . . calculating pipe diameter for tolerable energy loss
+    pipe_diam = economical_pipe_diameter(transmitted_flow/1000)
 
 
 run()
